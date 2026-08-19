@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>দোকানের বাকি হিসাব Pro</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f6f4;color:#17221b;font-family:"Noto Sans Bengali","SolaimanLipi",Arial,sans-serif}
+.wrap{max-width:1150px;margin:auto;padding:12px}.head{background:linear-gradient(135deg,#12633a,#2a9b61);color:white;border-radius:18px;padding:20px;box-shadow:0 7px 25px #0002}.head h1{margin:0 0 5px;font-size:27px}.head p{margin:0 0 14px;opacity:.9}.shop{display:flex;gap:8px}.shop input{flex:1}
+.card{background:white;border-radius:15px;padding:16px;margin:14px 0;box-shadow:0 3px 15px #0000000b}.card h2{font-size:19px;margin:0 0 13px}
+input,select,button{font:inherit;padding:10px 11px;border-radius:9px;border:1px solid #d4dbd6;background:white}button{background:#176b3f;color:#fff;border:0;font-weight:700;cursor:pointer}.light{background:#eaf5ee;color:#176b3f}.danger{background:#c62828}.gray{background:#66736b}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.field label{display:block;font-size:12px;color:#65716a;margin-bottom:4px}.field input,.field select{width:100%}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}.items{width:100%;border-collapse:collapse;margin-top:12px}.items th,.items td{border-bottom:1px solid #e5e9e6;padding:8px;text-align:left}.items input{width:100%}.right{text-align:right}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.stat{background:#f7faf8;border:1px solid #e1e7e3;padding:13px;border-radius:12px}.stat small{color:#66736b}.stat b{display:block;font-size:21px;margin-top:4px}
+.tabs{display:flex;gap:7px;overflow:auto;margin:14px 0}.tabs button{white-space:nowrap}.active{background:#0d4e30}
+.panel{display:none}.panel.show{display:block}.scroll{overflow:auto}.report{width:100%;border-collapse:collapse;min-width:650px}.report th,.report td{padding:9px;border-bottom:1px solid #e3e8e4;text-align:left}.report th{background:#f2f6f3}
+.hidden{display:none}.muted{color:#6b756f;font-size:13px}.empty{text-align:center;color:#78827d;padding:25px}
+@media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}.stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.wrap{padding:8px}.head h1{font-size:22px}.shop{flex-direction:column}.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.items{min-width:700px}}
+@media print{body{background:#fff}.head,.tabs,.no-print{display:none!important}.card{box-shadow:none;margin:0}.panel{display:none}.panel.printable{display:block!important}}
+</style>
+<link rel="manifest" href="./manifest.json"><meta name="theme-color" content="#176b3f"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"></head>
+<body>
+<div class="wrap">
+<header class="head">
+<h1 id="title">দোকানের বাকি হিসাব Pro</h1><p>বাকি • জমা • অবশিষ্ট • মাসিক রিপোর্ট • ব্যাকআপ</p>
+<div class="shop"><input id="shopName" placeholder="দোকানের নাম লিখুন"><button class="light" onclick="saveShop()">দোকানের নাম সংরক্ষণ</button></div>
+</header>
+
+<div class="stats" style="margin-top:14px">
+<div class="stat"><small>মোট বাকি</small><b id="sDue">৳ 0</b></div><div class="stat"><small>মোট জমা</small><b id="sPaid">৳ 0</b></div><div class="stat"><small>অবশিষ্ট</small><b id="sBal">৳ 0</b></div><div class="stat"><small>ক্রেতা</small><b id="sCustomers">0</b></div>
+</div>
+
+<nav class="tabs">
+<button class="active" onclick="tab('entry',this)">➕ নতুন বাকি</button>
+<button onclick="tab('customers',this)">👤 ক্রেতার হিসাব</button>
+<button onclick="tab('reports',this)">📊 রিপোর্ট</button>
+<button onclick="tab('backup',this)">💾 ব্যাকআপ</button>
+</nav>
+
+<section id="entry" class="panel show card">
+<h2>নতুন বাকি নেওয়া</h2>
+<div class="grid">
+<div class="field"><label>তারিখ</label><input id="date" type="date"></div>
+<div class="field"><label>ক্রেতার নাম</label><input id="customer" placeholder="যেমন: রহিম"></div>
+<div class="field"><label>মোবাইল (ঐচ্ছিক)</label><input id="phone" placeholder="01XXXXXXXXX"></div>
+<div class="field"><label>নোট</label><input id="note" placeholder="ঐচ্ছিক"></div>
+</div>
+<div class="scroll">
+<table class="items"><thead><tr><th>পণ্যের নাম</th><th>সংখ্যা</th><th>একক দাম</th><th>মোট</th><th></th></tr></thead><tbody id="itemRows"></tbody></table>
+</div>
+<div class="actions"><button class="light" onclick="addRow()">+ পণ্য যোগ করুন</button><button onclick="saveDue()">বাকি সংরক্ষণ</button></div>
+<p class="muted">একটি বাকি লেনদেনে একাধিক পণ্য যোগ করা যাবে।</p>
+</section>
+
+<section id="customers" class="panel card">
+<h2>ক্রেতাভিত্তিক হিসাব</h2>
+<div class="grid">
+<div class="field"><label>ক্রেতা খুঁজুন</label><input id="search" oninput="renderCustomers()" placeholder="নাম লিখুন"></div>
+</div>
+<div class="scroll"><table class="report"><thead><tr><th>ক্রেতা</th><th>মোট বাকি</th><th>মোট জমা</th><th>অবশিষ্ট</th><th>লেনদেন</th><th>দেখুন</th></tr></thead><tbody id="customerRows"></tbody></table></div>
+</section>
+
+<section id="reports" class="panel card">
+<h2>রিপোর্ট</h2>
+<div class="grid no-print">
+<div class="field"><label>শুরু</label><input id="from" type="date" onchange="renderReports()"></div>
+<div class="field"><label>শেষ</label><input id="to" type="date" onchange="renderReports()"></div>
+<div class="field"><label>ক্রেতা</label><input id="rCustomer" oninput="renderReports()" placeholder="সব ক্রেতা"></div>
+</div>
+<div class="actions no-print"><button onclick="printReport()">🖨️ প্রিন্ট / PDF</button></div>
+<div id="printArea"><h3 id="reportTitle"></h3><div class="scroll"><table class="report"><thead><tr><th>তারিখ</th><th>ক্রেতা</th><th>পণ্য</th><th>মোট বাকি</th><th>জমা</th><th>অবশিষ্ট</th></tr></thead><tbody id="reportRows"></tbody></table></div></div>
+</section>
+
+<section id="backup" class="panel card">
+<h2>ব্যাকআপ ও Restore</h2>
+<p class="muted">আপনার হিসাব একটি JSON ফাইলে ব্যাকআপ হিসেবে সংরক্ষণ করুন। পরে একই ফাইল দিয়ে Restore করা যাবে।</p>
+<div class="actions"><button onclick="backup()">⬇️ Backup ডাউনলোড</button><label><button class="light" onclick="document.getElementById('file').click()">⬆️ Restore</button></label><input id="file" class="hidden" type="file" accept=".json" onchange="restore(event)"><button class="danger" onclick="clearAll()">সব হিসাব মুছুন</button></div>
+</section>
+</div>
+
+<script>
+const KEY="shop_due_pro_v2";
+let db=JSON.parse(localStorage.getItem(KEY)||'{"shop":"","dues":[],"payments":[]}');
+const $=id=>document.getElementById(id), today=()=>new Date().toISOString().slice(0,10);
+const money=n=>"৳ "+Number(n||0).toLocaleString("bn-BD",{maximumFractionDigits:2});
+$("date").value=today(); $("shopName").value=db.shop||""; $("title").textContent=db.shop?db.shop+" — বাকি হিসাব":"দোকানের বাকি হিসাব Pro";
+
+function save(){localStorage.setItem(KEY,JSON.stringify(db));renderAll()}
+function saveShop(){db.shop=$("shopName").value.trim()||"আমার দোকান";localStorage.setItem(KEY,JSON.stringify(db));$("title").textContent=db.shop+" — বাকি হিসাব"}
+function tab(id,btn){document.querySelectorAll(".panel").forEach(x=>x.classList.remove("show"));$(id).classList.add("show");document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("active"));btn.classList.add("active");if(id==="reports")renderReports()}
+function addRow(){
+ const tr=document.createElement("tr");tr.innerHTML='<td><input class="p" placeholder="চাল"></td><td><input class="q" type="number" min="0" step="0.01" value="1"></td><td><input class="pr" type="number" min="0" step="0.01" placeholder="0"></td><td class="tot">৳ 0</td><td><button class="danger" onclick="this.closest(\'tr\').remove()">×</button></td>';
+ tr.querySelectorAll("input").forEach(x=>x.oninput=()=>calcRow(tr));$("itemRows").appendChild(tr)
+}
+function calcRow(tr){let q=+tr.querySelector(".q").value||0,p=+tr.querySelector(".pr").value||0;tr.querySelector(".tot").textContent=money(q*p)}
+function saveDue(){
+ let date=$("date").value,customer=$("customer").value.trim(),phone=$("phone").value.trim(),note=$("note").value.trim(),rows=[...document.querySelectorAll("#itemRows tr")];
+ if(!date||!customer||!rows.length){alert("তারিখ, ক্রেতার নাম ও অন্তত একটি পণ্য দিন।");return}
+ let items=[],total=0;
+ for(const r of rows){let product=r.querySelector(".p").value.trim(),qty=+r.querySelector(".q").value||0,price=+r.querySelector(".pr").value||0;if(!product||qty<=0){alert("সব পণ্যের নাম ও সংখ্যা সঠিকভাবে দিন।");return}let t=qty*price;items.push({product,qty,price,total:t});total+=t}
+ db.dues.push({id:Date.now(),date,customer,phone,note,items,total});save();
+ $("customer").value="";$("phone").value="";$("note").value="";$("itemRows").innerHTML="";addRow();alert("বাকি হিসাব সংরক্ষণ হয়েছে।")
+}
+function totals(){let due=db.dues.reduce((s,x)=>s+x.total,0),paid=db.payments.reduce((s,x)=>s+x.amount,0);return{due,paid,bal:Math.max(0,due-paid)}}
+function customerList(){let m={};db.dues.forEach(x=>{m[x.customer]??={due:0,paid:0,n:0};m[x.customer].due+=x.total;m[x.customer].n++});db.payments.forEach(x=>{m[x.customer]??={due:0,paid:0,n:0};m[x.customer].paid+=x.amount});return m}
+function renderAll(){let t=totals(),m=customerList();$("sDue").textContent=money(t.due);$("sPaid").textContent=money(t.paid);$("sBal").textContent=money(t.bal);$("sCustomers").textContent=Object.keys(m).length;renderCustomers();renderReports()}
+function renderCustomers(){
+ let m=customerList(),q=$("search").value.trim().toLowerCase(),a=Object.entries(m).filter(([n])=>n.toLowerCase().includes(q));
+ $("customerRows").innerHTML=a.length?a.map(([n,v])=>`<tr><td>${esc(n)}</td><td>${money(v.due)}</td><td>${money(v.paid)}</td><td>${money(Math.max(0,v.due-v.paid))}</td><td>${v.n}</td><td><button onclick="customerReport('${escAttr(n)}')">দেখুন</button></td></tr>`).join(""):'<tr><td colspan="6" class="empty">কোনো ক্রেতা নেই</td></tr>'
+}
+function customerReport(n){$("rCustomer").value=n;tab("reports",document.querySelectorAll(".tabs button")[2]);renderReports()}
+function range(d){let f=$("from").value,t=$("to").value;return(!f||d>=f)&&(!t||d<=t)}
+function renderReports(){
+ let q=$("rCustomer").value.trim().toLowerCase(), rows=[];
+ db.dues.filter(x=>range(x.date)&&(!q||x.customer.toLowerCase().includes(q))).forEach(x=>rows.push({date:x.date,customer:x.customer,product:x.items.map(i=>i.product+" × "+i.qty).join(", "),due:x.total,paid:0}));
+ db.payments.filter(x=>range(x.date)&&(!q||x.customer.toLowerCase().includes(q))).forEach(x=>rows.push({date:x.date,customer:x.customer,product:"জমা",due:0,paid:x.amount}));
+ rows.sort((a,b)=>a.date.localeCompare(b.date));let running=0;
+ $("reportRows").innerHTML=rows.length?rows.map(x=>{running+=x.due-x.paid;return`<tr><td>${x.date}</td><td>${esc(x.customer)}</td><td>${esc(x.product)}</td><td>${money(x.due)}</td><td>${money(x.paid)}</td><td>${money(Math.max(0,running))}</td></tr>`}).join(""):'<tr><td colspan="6" class="empty">এই সময়ের কোনো হিসাব নেই</td></tr>';
+ $("reportTitle").textContent=(db.shop||"দোকান")+" — হিসাব রিপোর্ট";
+}
+function printReport(){document.querySelectorAll(".panel").forEach(x=>x.classList.remove("printable"));$("reports").classList.add("printable");window.print()}
+function backup(){let blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="dokan-baki-backup-"+today()+".json";a.click();URL.revokeObjectURL(a.href)}
+function restore(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!x.dues||!x.payments)throw 0;db=x;save();alert("Restore সফল হয়েছে।")}catch{alert("ভুল Backup ফাইল।")}};r.readAsText(f)}
+function clearAll(){if(confirm("সব হিসাব মুছে ফেলবেন? এই কাজটি ফিরিয়ে আনা যাবে না।")){db={shop:db.shop,dues:[],payments:[]};save()}}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function escAttr(s){return String(s).replace(/\\/g,"\\\\").replace(/'/g,"\\'")}
+addRow();renderAll();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
